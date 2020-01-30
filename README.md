@@ -1,2 +1,1 @@
-# APM466HW1
-UofT APM466 HW1 Codes
+IF you want to cheat, this assginment is too hard lol
