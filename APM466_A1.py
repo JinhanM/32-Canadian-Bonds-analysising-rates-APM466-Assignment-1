@@ -65,7 +65,8 @@ def generate_data(bond_info):
     dirty_price(bond_info)
     yield_calulator(bond_info)
 
-def plot_all(all_info):
+
+def plot_yield(all_info):
     labels = ['Jan 2', 'Jan 3', 'Jan 6', 'Jan 7', 'Jan 8', 'Jan 9','Jan 10','Jan 13','Jan 14','Jan 15']
     plt.xlabel('time to maturity')
     plt.ylabel('yield to maturity')
@@ -76,4 +77,42 @@ def plot_all(all_info):
     plt.legend(bbox_to_anchor = (0.8,0.98), loc='upper left', borderaxespad=0.)
     plt.show()
 
-plot_all(df)
+# plot_all(df)
+
+# bootstrapping and calculate the spot rate:
+def spot(bond_info):
+    s = np.empty([1,10])
+    for i, bonds in bond_info.iterrows():
+        total_time = bonds["time to maturity"]
+        dirty_price = bonds["dirty price"]
+        coupons = bonds["coupon"] * 100
+        tr = bonds["plot x"]
+        if i == 0:
+            # 0 <= T <= 0.5:
+            s[0, i] = -np.log(dirty_price / (coupons / 2 + 100)) / bonds["plot x"]
+        else:
+            # 0.5 <= T <= 1:
+            pmt = np.asarray([coupons / 2] * i + [coupons / 2 + 100])
+            # print(type(bonds["plot x"][:i]))
+            spot_func = lambda y: np.dot(pmt[:-1],
+                        np.exp(-(np.multiply(s[0,:i], bond_info["plot x"][:i])))) + pmt[i] * np.exp(-y * bonds["plot x"]) - dirty_price
+            s[0, i] = optimize.fsolve(spot_func, .05)
+    s[0, 5] = (s[0, 4] + s[0, 6]) / 2
+    s[0, 7] = (s[0, 5] + s[0, 8]) / 2
+    return s
+
+
+def plot_spot(all_info):
+    labels = ['Jan 2','Jan 3','Jan 6','Jan 7','Jan 8',
+             'Jan 9','Jan 10','Jan 13','Jan 14','Jan 15']
+    plt.xlabel('time to maturity')
+    plt.ylabel('spot rate')
+    plt.title('5-year spot curve')
+    for i in range(len(df)):
+        generate_data(all_info[i])
+        spot(all_info[i])
+        plt.plot(all_info[i]["plot x"], spot(all_info[i]).squeeze(), label = labels[i])
+    plt.legend(loc = 'upper right', prop={"size":8})
+    plt.show()
+
+plot_spot(df)
