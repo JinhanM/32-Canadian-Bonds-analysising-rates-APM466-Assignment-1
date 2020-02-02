@@ -85,6 +85,7 @@ def plot_yield(all_info):
     for i in range(len(df)):
         plt.plot(all_info[i]["plot x"], all_info[i]["yield"], label = labels[i])
     plt.legend(bbox_to_anchor = (0.8,0.98), loc='upper left', borderaxespad=0.)
+    plt.savefig('/Users/jinhanmei/Desktop/APM466HW1/original_yield_curve.png')
     plt.show()
 
 
@@ -111,7 +112,9 @@ def plot_yield_inter(all_info):
         inter_res = interpolation(all_info[i]["plot x"], all_info[i]["yield"])
         plt.plot(inter_res[0], inter_res[1].squeeze(), label = labels[i])
     plt.legend(loc = 'upper right', prop={"size":8})
+    plt.savefig('/Users/jinhanmei/Desktop/APM466HW1/interpolated_yield_curve.png')
     plt.show()
+
 
 
 plot_yield_inter(df)
@@ -119,7 +122,7 @@ plot_yield_inter(df)
 
 # Calculate the spot rate
 def spot_calculator(bond_info):
-    s = np.empty([1,10])
+    s = np.empty([1,11])
     for i, bonds in bond_info.iterrows():
         total_time = bonds["time to maturity"]
         dirty_price = bonds["dirty price"]
@@ -147,6 +150,7 @@ def plot_spot(all_info):
         spot_calculator(all_info[i])
         plt.plot(all_info[i]["plot x"], spot_calculator(all_info[i]).squeeze(), label = labels[i])
     plt.legend(bbox_to_anchor = (0.8,0.98), loc='upper left', borderaxespad=0.)
+    plt.savefig('/Users/jinhanmei/Desktop/APM466HW1/original_spot_curve.png')
     plt.show()
 
 
@@ -163,6 +167,7 @@ def plot_spot_inter(all_info):
         x, y = interpolation(all_info[i]["plot x"], spot.squeeze())
         plt.plot(x, y, label = labels[i])
     plt.legend(bbox_to_anchor = (0.8,0.98), loc='upper left', borderaxespad=0.)
+    plt.savefig('/Users/jinhanmei/Desktop/APM466HW1/interpolated_spot_curve.png')
     plt.show()
 
 
@@ -172,6 +177,7 @@ plot_spot_inter(df)
 # Calculate the forward rate
 def forward_calculator(bond_info):
     y = spot_calculator(bond_info).squeeze()
+    x, y = interpolation(bond_info["plot x"], y)
     f1 = (y[3] * 2 - y[1] * 1)/(2-1)
     f2 = (y[5] * 3 - y[1] * 1)/(3-1)
     f3 = (y[7] * 4 - y[1] * 1)/(4-1)
@@ -188,6 +194,7 @@ def plot_forward(all_info):
     for i in range(len(all_info)):
         plt.plot(['1yr-1yr','1yr-2yr','1yr-3yr','1yr-4yr'], forward_calculator(all_info[i]), label = labels[i])
     plt.legend(loc = 'upper right', prop={"size":8})
+    plt.savefig('/Users/jinhanmei/Desktop/APM466HW1/original_forward_curve.png')
     plt.show()
 
 
@@ -199,7 +206,7 @@ def cov_calculator(all_info):
     log = np.empty([5,9])
     yi = np.empty([5,10])
     for i in range(len(all_info)):
-        y = all_info[i]["yield"]
+        x,y = interpolation(all_info[i]["plot x"], all_info[i]["yield"])
         yi[0,i] = y[1]
         yi[1,i] = y[3]
         yi[2,i] = y[5]
@@ -216,7 +223,7 @@ def cov_calculator(all_info):
     return np.cov(log),log
 
 
-print(cov_calculator(df)[0])
+print("The covariance matrix is: ", cov_calculator(df)[0])
 
 
 def get_f_matrix(all_info):
@@ -226,7 +233,7 @@ def get_f_matrix(all_info):
     return f_m
 
 
-print(np.cov(get_f_matrix(df)))
+print("The covariance matrix is: ", np.cov(get_f_matrix(df)))
 
 
 w1, v1 = LA.eig(np.cov(cov_calculator(df)[1]))
