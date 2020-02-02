@@ -65,6 +65,7 @@ def yield_calulator(bond_info):
     bond_info["yield"] = yield_lst
     bond_info["plot x"] = time_lst
 
+
 def generate_data(all_bonds):
     for bond_info in all_bonds:
         time_to_maturity(bond_info)
@@ -85,6 +86,9 @@ def plot_yield(all_info):
         plt.plot(all_info[i]["plot x"], all_info[i]["yield"], label = labels[i])
     plt.legend(bbox_to_anchor = (0.8,0.98), loc='upper left', borderaxespad=0.)
     plt.show()
+
+
+plot_yield(df)
 
 
 # Interpolation.
@@ -110,7 +114,7 @@ def plot_yield_inter(all_info):
     plt.show()
 
 
-#plot_yield_inter(df)
+plot_yield_inter(df)
 
 
 # Calculate the spot rate
@@ -138,15 +142,15 @@ def spot_calculator(bond_info):
 def plot_spot(all_info):
     plt.xlabel('time to maturity')
     plt.ylabel('spot rate')
-    plt.title('5-year spot curve')
+    plt.title('5-year uninterpolated spot curve')
     for i in range(len(all_info)):
         spot_calculator(all_info[i])
-        plt.plot(all_info[i]["plot x"], spot(all_info[i]).squeeze(), label = labels[i])
+        plt.plot(all_info[i]["plot x"], spot_calculator(all_info[i]).squeeze(), label = labels[i])
     plt.legend(bbox_to_anchor = (0.8,0.98), loc='upper left', borderaxespad=0.)
     plt.show()
 
 
-# plot_spot(df)
+plot_spot(df)
 
 
 # Plot the interpolated spot curve
@@ -162,7 +166,7 @@ def plot_spot_inter(all_info):
     plt.show()
 
 
-# plot_spot_inter(df)
+plot_spot_inter(df)
 
 
 # Calculate the forward rate
@@ -181,15 +185,13 @@ def plot_forward(all_info):
     plt.xlabel('time to maturity')
     plt.ylabel('forward rate')
     plt.title('1-year forward rate curve')
-    f_m = np.empty([4,10])
     for i in range(len(all_info)):
-        f_m[:,i] = forward(all_info[i])
         plt.plot(['1yr-1yr','1yr-2yr','1yr-3yr','1yr-4yr'], forward_calculator(all_info[i]), label = labels[i])
     plt.legend(loc = 'upper right', prop={"size":8})
     plt.show()
 
 
-# plot_forward(df)
+plot_forward(df)
 
 
 # calculate covariance matrix
@@ -214,7 +216,7 @@ def cov_calculator(all_info):
     return np.cov(log),log
 
 
-# print(cov_calculator(df)[0])
+print(cov_calculator(df)[0])
 
 
 def get_f_matrix(all_info):
@@ -224,11 +226,11 @@ def get_f_matrix(all_info):
     return f_m
 
 
-# print(np.cov(get_f_matrix(df)))
+print(np.cov(get_f_matrix(df)))
 
 
 w1, v1 = LA.eig(np.cov(cov_calculator(df)[1]))
-# print("The eigenvalue of the matrix is :", w1, "\n,and the eigenvector of the matrix is: ", v1)
+print("The eigenvalue of the matrix is :", w1, "\n,and the eigenvector of the matrix is: ", v1)
 
 w2, v2 = LA.eig(np.cov(get_f_matrix(df)))
-# print("The eigenvalue of the matrix is :", w2, "\n,and the eigenvector of the matrix is: ", v2)
+print("The eigenvalue of the matrix is :", w2, "\n,and the eigenvector of the matrix is: ", v2)
