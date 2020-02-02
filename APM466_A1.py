@@ -163,3 +163,72 @@ def plot_spot_inter(all_info):
 
 
 # plot_spot_inter(df)
+
+
+# Calculate the forward rate
+def forward_calculator(bond_info):
+    y = spot_calculator(bond_info).squeeze()
+    f1 = (y[3] * 2 - y[1] * 1)/(2-1)
+    f2 = (y[5] * 3 - y[1] * 1)/(3-1)
+    f3 = (y[7] * 4 - y[1] * 1)/(4-1)
+    f4 = (y[9] * 5 - y[1] * 1)/(5-1)
+    f = [f1,f2,f3,f4]
+    return f
+
+
+# Plot the forward curve
+def plot_forward(all_info):
+    plt.xlabel('time to maturity')
+    plt.ylabel('forward rate')
+    plt.title('1-year forward rate curve')
+    f_m = np.empty([4,10])
+    for i in range(len(all_info)):
+        f_m[:,i] = forward(all_info[i])
+        plt.plot(['1yr-1yr','1yr-2yr','1yr-3yr','1yr-4yr'], forward_calculator(all_info[i]), label = labels[i])
+    plt.legend(loc = 'upper right', prop={"size":8})
+    plt.show()
+
+
+# plot_forward(df)
+
+
+# calculate covariance matrix
+def cov_calculator(all_info):
+    log = np.empty([5,9])
+    yi = np.empty([5,10])
+    for i in range(len(all_info)):
+        y = all_info[i]["yield"]
+        yi[0,i] = y[1]
+        yi[1,i] = y[3]
+        yi[2,i] = y[5]
+        yi[3,i] = y[7]
+        yi[4,i] = y[9]
+
+    for i in range(0, 9):
+        log[0, i] = np.log(yi[0,i+1]/yi[0,i])
+        log[1, i] = np.log(yi[1,i+1]/yi[1,i])
+        log[2, i] = np.log(yi[2,i+1]/yi[2,i])
+        log[3, i] = np.log(yi[3,i+1]/yi[3,i])
+        log[4, i] = np.log(yi[4,i+1]/yi[4,i])
+
+    return np.cov(log),log
+
+
+# print(cov_calculator(df)[0])
+
+
+def get_f_matrix(all_info):
+    f_m = np.empty([4,10])
+    for i in range(len(all_info)):
+        f_m[:,i] = forward_calculator(all_info[i])
+    return f_m
+
+
+# print(np.cov(get_f_matrix(df)))
+
+
+w1, v1 = LA.eig(np.cov(cov_calculator(df)[1]))
+# print("The eigenvalue of the matrix is :", w1, "\n,and the eigenvector of the matrix is: ", v1)
+
+w2, v2 = LA.eig(np.cov(get_f_matrix(df)))
+# print("The eigenvalue of the matrix is :", w2, "\n,and the eigenvector of the matrix is: ", v2)
