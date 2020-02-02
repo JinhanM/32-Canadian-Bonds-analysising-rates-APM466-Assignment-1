@@ -2,6 +2,7 @@ import scipy.interpolate
 import pandas as pd
 import scipy.optimize as optimize
 import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
 from matplotlib.ticker import PercentFormatter
 import numpy as np
 from numpy import linalg as LA
@@ -20,11 +21,13 @@ df8 = pd.read_excel(xls, '1.13')
 df9 = pd.read_excel(xls, '1.14')
 df10 = pd.read_excel(xls, '1.15')
 df = [df1, df2, df3, df4, df5, df6, df7, df8, df9, df10]
+labels = ['Jan 2','Jan 3','Jan 6','Jan 7','Jan 8', 'Jan 9','Jan 10','Jan 13','Jan 14','Jan 15']
 
 
 def time_to_maturity(bond_info):
     current_date = bond_info.columns.values[0]
     bond_info["time to maturity"] = [(maturity - current_date).days for maturity in bond_info["maturity date"]]
+
 
 def accrued_interest(bond_info):
     temp = []
@@ -32,12 +35,15 @@ def accrued_interest(bond_info):
         temp.append((182-bonds["time to maturity"] % 182) * bonds["coupon"] * 100 / 365)
     bond_info["accrued interest"] = temp
 
+
 def dirty_price(bond_info):
     temp = []
     for i, bonds in bond_info.iterrows():
         temp.append(bonds["close price"] + bonds["accrued interest"])
     bond_info["dirty price"] = temp
 
+
+# Calculate the yield
 def yield_calulator(bond_info):
     yield_lst = []
     time_lst = []
@@ -59,28 +65,56 @@ def yield_calulator(bond_info):
     bond_info["yield"] = yield_lst
     bond_info["plot x"] = time_lst
 
-def generate_data(bond_info):
-    time_to_maturity(bond_info)
-    accrued_interest(bond_info)
-    dirty_price(bond_info)
-    yield_calulator(bond_info)
+def generate_data(all_bonds):
+    for bond_info in all_bonds:
+        time_to_maturity(bond_info)
+        accrued_interest(bond_info)
+        dirty_price(bond_info)
+        yield_calulator(bond_info)
 
 
+generate_data(df)
+
+
+# Plot uninterpolated yield curve
 def plot_yield(all_info):
-    labels = ['Jan 2', 'Jan 3', 'Jan 6', 'Jan 7', 'Jan 8', 'Jan 9','Jan 10','Jan 13','Jan 14','Jan 15']
     plt.xlabel('time to maturity')
     plt.ylabel('yield to maturity')
     plt.title('original 5-year yield curve')
     for i in range(len(df)):
-        generate_data(all_info[i])
         plt.plot(all_info[i]["plot x"], all_info[i]["yield"], label = labels[i])
     plt.legend(bbox_to_anchor = (0.8,0.98), loc='upper left', borderaxespad=0.)
     plt.show()
 
-# plot_all(df)
 
-# bootstrapping and calculate the spot rate:
-def spot(bond_info):
+# Interpolation.
+def interpolation(x_info, y_info):
+    x = [0.5,1,1.5,2,2.5,3,3.5,4,4.5,5]
+    temp = []
+    inter = interp1d(x_info, y_info, bounds_error=False)
+    for i in x:
+        value = float(inter(i))
+        temp.append(value)
+    return np.asarray(x), np.asarray(temp)
+
+
+# Plot the interpolated yield curve
+def plot_yield_inter(all_info):
+    plt.xlabel('time to maturity')
+    plt.ylabel('yield to maturity')
+    plt.title('interpolated 5-year yield curve')
+    for i in range(len(all_info)):
+        inter_res = interpolation(all_info[i]["plot x"], all_info[i]["yield"])
+        plt.plot(inter_res[0], inter_res[1].squeeze(), label = labels[i])
+    plt.legend(loc = 'upper right', prop={"size":8})
+    plt.show()
+
+
+#plot_yield_inter(df)
+
+
+# Calculate the spot rate
+def spot_calculator(bond_info):
     s = np.empty([1,10])
     for i, bonds in bond_info.iterrows():
         total_time = bonds["time to maturity"]
@@ -88,10 +122,8 @@ def spot(bond_info):
         coupons = bonds["coupon"] * 100
         tr = bonds["plot x"]
         if i == 0:
-            # 0 <= T <= 0.5:
             s[0, i] = -np.log(dirty_price / (coupons / 2 + 100)) / bonds["plot x"]
         else:
-            # 0.5 <= T <= 1:
             pmt = np.asarray([coupons / 2] * i + [coupons / 2 + 100])
             # print(type(bonds["plot x"][:i]))
             spot_func = lambda y: np.dot(pmt[:-1],
@@ -102,17 +134,32 @@ def spot(bond_info):
     return s
 
 
+# Plot the uninterpolated spot curve
 def plot_spot(all_info):
-    labels = ['Jan 2','Jan 3','Jan 6','Jan 7','Jan 8',
-             'Jan 9','Jan 10','Jan 13','Jan 14','Jan 15']
     plt.xlabel('time to maturity')
     plt.ylabel('spot rate')
     plt.title('5-year spot curve')
-    for i in range(len(df)):
-        generate_data(all_info[i])
-        spot(all_info[i])
+    for i in range(len(all_info)):
+        spot_calculator(all_info[i])
         plt.plot(all_info[i]["plot x"], spot(all_info[i]).squeeze(), label = labels[i])
-    plt.legend(loc = 'upper right', prop={"size":8})
+    plt.legend(bbox_to_anchor = (0.8,0.98), loc='upper left', borderaxespad=0.)
     plt.show()
 
-plot_spot(df)
+
+# plot_spot(df)
+
+
+# Plot the interpolated spot curve
+def plot_spot_inter(all_info):
+    plt.xlabel('time to maturity')
+    plt.ylabel('spot rate')
+    plt.title('5-year interpolated spot curve')
+    for i in range(len(all_info)):
+        spot = spot_calculator(all_info[i])
+        x, y = interpolation(all_info[i]["plot x"], spot.squeeze())
+        plt.plot(x, y, label = labels[i])
+    plt.legend(bbox_to_anchor = (0.8,0.98), loc='upper left', borderaxespad=0.)
+    plt.show()
+
+
+# plot_spot_inter(df)
