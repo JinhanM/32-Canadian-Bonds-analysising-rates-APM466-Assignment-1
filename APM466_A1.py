@@ -132,7 +132,6 @@ def spot_calculator(bond_info):
             s[0, i] = -np.log(dirty_price / (coupons / 2 + 100)) / bonds["plot x"]
         else:
             pmt = np.asarray([coupons / 2] * i + [coupons / 2 + 100])
-            # print(type(bonds["plot x"][:i]))
             spot_func = lambda y: np.dot(pmt[:-1],
                         np.exp(-(np.multiply(s[0,:i], bond_info["plot x"][:i])))) + pmt[i] * np.exp(-y * bonds["plot x"]) - dirty_price
             s[0, i] = optimize.fsolve(spot_func, .05)
